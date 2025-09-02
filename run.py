@@ -1,10 +1,10 @@
-# streamlit_adaboost_pro.py
+# streamlit_adaboost_pro_resized_compact.py
 import streamlit as st
 import numpy as np
 import matplotlib.pyplot as plt
 
 st.set_page_config(page_title="AdaBoost Interactive Visualization", layout="wide")
-st.title("AdaBoost Interactive Visualization (From Scratch)")
+st.title("AdaBoost Interactive Visualization (Compact)")
 
 # ======================
 # 1️⃣ Dataset Controls
@@ -92,47 +92,42 @@ alphas, weak_learners, weight_history, error_history, alpha_history = train_adab
 )
 
 y_pred_final = strong_classifier(X, alphas, weak_learners)
-
 st.write("**Final Predictions:**", y_pred_final)
 
 # ======================
-# 4️⃣ Step-by-Step Weight Visualization
+# 4️⃣ Step-by-Step Weight Visualization (Compact)
 # ======================
 st.subheader("Step-by-Step Weight Updates")
 for t in range(num_learners):
-    fig, ax = plt.subplots()
-    # Color intensity proportional to weight
+    fig, ax = plt.subplots(figsize=(2.5,2))  # ~50% of default
     colors = []
     for i, label in enumerate(y):
         base_color = np.array([0,0,1]) if label==1 else np.array([1,0,0])
         weight_scaled = weight_history[t][i]
         colors.append(base_color * weight_scaled + 0.5*(1-weight_scaled))
-    ax.scatter(X[:,0], X[:,1], s=weight_history[t]*1500, color=colors, edgecolor='black', label='Points')
+    ax.scatter(X[:,0], X[:,1], s=weight_history[t]*500 + 50, color=colors, edgecolor='black')
     
-    # Highlight misclassified points
     mis_idx = np.where(weak_learners[t][2] != y)[0]
-    ax.scatter(X[mis_idx,0], X[mis_idx,1], facecolors='none', edgecolors='yellow', s=weight_history[t][mis_idx]*2000, linewidths=2, label='Misclassified')
+    ax.scatter(X[mis_idx,0], X[mis_idx,1], facecolors='none', edgecolors='yellow',
+               s=weight_history[t][mis_idx]*700 + 50, linewidths=2)
     
-    # Plot threshold line
     if weak_learners[t][0]==0:
-        ax.axvline(x=weak_learners[t][1], color='green', linestyle='--', label='Threshold X1')
+        ax.axvline(x=weak_learners[t][1], color='green', linestyle='--')
     else:
-        ax.axhline(y=weak_learners[t][1], color='green', linestyle='--', label='Threshold X2')
+        ax.axhline(y=weak_learners[t][1], color='green', linestyle='--')
     
-    ax.set_title(f"Weights after Weak Learner {t+1} (α={alpha_history[t]:.2f}, error={error_history[t]:.2f})")
-    ax.set_xlabel("X1")
-    ax.set_ylabel("X2")
-    ax.legend()
+    ax.set_title(f"Weights after Weak Learner {t+1} (α={alpha_history[t]:.2f}, error={error_history[t]:.2f})", fontsize=8)
+    ax.set_xlabel("X1", fontsize=7)
+    ax.set_ylabel("X2", fontsize=7)
     st.pyplot(fig)
 
 # ======================
-# 5️⃣ Decision Boundary
+# 5️⃣ Decision Boundary (Compact)
 # ======================
 st.subheader("Decision Boundary Evolution")
 xx, yy = np.meshgrid(np.linspace(0,6,200), np.linspace(0,6,200))
 grid = np.c_[xx.ravel(), yy.ravel()]
 
-# Plot boundary after each learner
 for t in range(num_learners):
     final_pred_partial = np.zeros(grid.shape[0])
     for alpha, (feature, thresh, _) in zip(alphas[:t+1], weak_learners[:t+1]):
@@ -140,33 +135,11 @@ for t in range(num_learners):
         final_pred_partial += alpha * pred
     Z = np.sign(final_pred_partial).reshape(xx.shape)
     
-    fig, ax = plt.subplots()
+    fig, ax = plt.subplots(figsize=(2.5,2))  # ~50% of default
     ax.contourf(xx, yy, Z, alpha=0.3, cmap=plt.cm.bwr)
-    ax.scatter(X[y==1][:,0], X[y==1][:,1], color='blue', label='+1')
-    ax.scatter(X[y==-1][:,0], X[y==-1][:,1], color='red', label='-1')
-    ax.set_title(f"Decision Boundary after Weak Learner {t+1}")
-    ax.set_xlabel("X1")
-    ax.set_ylabel("X2")
-    ax.legend()
+    ax.scatter(X[y==1][:,0], X[y==1][:,1], color='blue')
+    ax.scatter(X[y==-1][:,0], X[y==-1][:,1], color='red')
+    ax.set_title(f"Decision Boundary after Weak Learner {t+1}", fontsize=8)
+    ax.set_xlabel("X1", fontsize=7)
+    ax.set_ylabel("X2", fontsize=7)
     st.pyplot(fig)
-
-# ======================
-# 6️⃣ Save Plots
-# ======================
-st.subheader("Save Final Decision Boundary")
-fig, ax = plt.subplots()
-Z_final = strong_classifier(grid, alphas, weak_learners).reshape(xx.shape)
-ax.contourf(xx, yy, Z_final, alpha=0.3, cmap=plt.cm.bwr)
-ax.scatter(X[y==1][:,0], X[y==1][:,1], color='blue', label='+1')
-ax.scatter(X[y==-1][:,0], X[y==-1][:,1], color='red', label='-1')
-ax.set_title("Final AdaBoost Decision Boundary")
-ax.set_xlabel("X1")
-ax.set_ylabel("X2")
-ax.legend()
-st.pyplot(fig)
-
-# Option to download final plot
-import io
-buf = io.BytesIO()
-fig.savefig(buf, format="png")
-st.download_button("Download Final Decision Boundary", buf, file_name="adaboost_boundary.png", mime="image/png")
